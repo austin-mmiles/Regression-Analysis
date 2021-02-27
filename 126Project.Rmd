@@ -1,0 +1,258 @@
+---
+title: "Real Estate Valuation Data Analysis"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminary Expectations
+
+Before fitting the model, I expect the following relationships to occur within the model:
+
+1. A positive linear relationship between Transaction Date and Price per Unit Area due to the effects of inflation. 
+
+2. A negative linear relationship between House Age and Price per Unit Area due to the desirability of newly built homes.
+
+3. A positive linear relationship between the Number of Convenience Stores in the Living Circle and Price per Unit Area due to the desirability of proximity to urban commercial centers as well as the finite extent of urban residential land. 
+
+4. A positive linear relationship between the Latitude of a home and the Price per Unit Area as the Xindian District, the district from which data was collected, is located in southern New Taipei City, Taiwan. Therefore observations with larger latitude values are located farther north, closer to the center of New Taipei City. These observations should correlate to a higher Price per Unit Area due to the desirability of proximity to urban centers and the finite extent of urban residential land.
+
+******
+\pagebreak
+
+# Exploratory Analysis 
+```{r include=FALSE}
+rev<-read.table("C:/Users/reill/Downloads/RealEstateValuation.txt")
+attach(rev)
+library(alr4)
+```
+```{r}
+fit<-lm(Price~TDate+Age+Stores+Latitude)
+scatterplotMatrix(~Price+TDate+Age+Stores+Latitude)
+avPlots(fit)
+summary(fit)
+
+```
+
+The fitted linear model for the Price Per Unit Area of a house based on the transaction date, the house age, the number of convenience stores in the living circle, and the latitude of the house is:
+
+Price=-17419.95+3.613(Transaction Date)-0.302(House Age)+1.929(Stores in Living Circle)+407.81(Latitude).
+
+# Tests for Significance of Predictors in Model:
+
+### Transaction Date: 
+Null Hypothesis $H_{0}: \beta_{1}=0,$ Alternative Hypothesis $H_{A}: \beta_{1} \neq 0$.
+```{r}
+#T-Value
+T=fit$coefficients[2]/(1.686)
+#Critical Value
+CV=qt(0.995, 412)
+#Test
+abs(T)>CV
+```
+Since the absolute value of the T value is less than the critical value at level $\alpha=0.01$, the null hypothesis is not rejected and it is determined that $\beta_{1} = 0$. Therefore Transaction Date is not a significant predictor in the model after accounting for the other predictors.
+
+### House Age:
+Null Hypothesis $H_{0}: \beta_{2}=0,$ Alternative Hypothesis $H_{A}: \beta_{2} \neq 0$.
+
+```{r}
+#T-Value
+T=fit$coefficients[3]/(0.04178)
+#Critical Value
+CV=qt(0.995,412)
+#Test
+abs(T)>CV
+```
+Since the absolute value of the T value is greater than the critical value at level $\alpha=0.05$, the null hypothesis is rejected and it is determined that $\beta_{2} \neq 0$. Therefore House Age is a significant predictor in the model after accounting for the other predictors.
+
+### Number of Convenience Stores: 
+Null Hypothesis $H_{0}: \beta_{3}=0,$ Alternative Hypothesis $H_{A}: \beta_{3} \neq 0$.
+
+```{r}
+#T-Value
+T=fit$coefficients[4]/(0.1801)
+#Critical Value
+CV=qt(0.995,412)
+#Test
+abs(T)>CV
+```
+Since the absolute value of the T value is greater than the critical value at level $\alpha=0.01$, the null hypothesis is rejected and it is determined that $\beta_3 \neq 0$. Therefore the Number of Convenience Stores is a significant predictor in the model after accounting for the other predictors.
+
+### Latitude: 
+Null Hypothesis $H_0:\beta_4=0,$ Alternative Hypothesis $H_A:\beta_4 \neq 0$.
+
+```{r}
+#T-Value
+T=fit$coefficients[5]/(42.78)
+#Critical Value
+CV=qt(0.995, 412)
+#Test
+abs(T)>CV
+```
+Since the absolute value of the T value is greater than the critical value at level $\alpha=0.01$, the null hypothesis is rejected and it is determined that $\beta_4 \neq 0$. Therefore Latitude is a significant predictor in the model after accounting for the other predictors.
+
+# Adding Predictors Metro/Longitude
+
+### Adding Metro
+The following test will determine if the model is improved enough with the inclusion of the predictor Distance to the Nearest MRT Station to warrant the increased complextiy of an added predictor. 
+Null Hypothesis $H_0:$ The model without Metro is sufficient, Alternative Hypothesis $H_A:$ Metro is a significant addition to the model given the predictors.
+```{r}
+submodel<-lm(Price~TDate+Age+Stores+Latitude)
+fullmodel<-lm(Price~TDate+Age+Stores+Latitude+Metro)
+anova(submodel, fullmodel)
+```
+The value of the test statistic is 78.972, the null distribution of the test statistic is $F_{1,408}.$ The P-Value is less than $2.2*10^{-16}$, which is less than $\alpha=0.05.$ Therefore the null hypothesis is rejected and it is determined that Metro is a significant addition to the model. 
+
+### Adding Longitude
+The following test will determine if the model is improved enough with the inclusion of the predictor Longitude to warrant the increased complexity of an added predictor.
+
+Null Hypothesis $H_0:$ The model without Longitude is sufficient, Alternative Hypothesis $H_A:$ Longitude is a significant addition to the model given the predictors.
+
+```{r}
+submodel<-lm(Price~TDate+Age+Stores+Latitude)
+fullmodel<-lm(Price~TDate+Age+Stores+Latitude+Longitude)
+anova(submodel, fullmodel)
+```
+The value of the test statistic is 36.402, the null distribution of the test statistic is $F_{1,408}$. The P-Value is $3.605*10^{-9}$, which is less than $\alpha=0.05$. Therefore the null hypothesis is rejected and it is determined that Longitude is a signifcant addition to the model given the predictors.
+
+### Adding Metro Given Longitude is in the Model
+The following test will determine if the model with the predictor Longtiude included is improved enough with the addition of  Metro to warrant the increased complexity of an added predictor. 
+
+Null Hypothesis $H_0:$ The model with Longtidue and without Metro is suffcient, $H_A:$ Metro is a significant addition to the model. 
+
+```{r}
+submodel<-lm(Price~TDate+Age+Stores+Latitude+Longitude)
+fullmodel<-lm(Price~TDate+Age+Stores+Latitude+Longitude+Metro)
+anova(submodel, fullmodel)
+```
+The value of the test statistic is 39.059, the null distribution of the test statistic is $F_{1, 407}$. The P-Value is $1.039*10^{-09},$ which is less than $\alpha=0.05.$ Therefore the null hypothesis is rejected and it is determined that Metro is a significant addition to the model that includes Longitude given the predictors.
+
+### Adding Longitude Given Metro is in the Model
+The following test will determie if the model with the predictor Metro included is improved enough with the addition of Longitude to warrant the increased complexity of an added predictor.
+
+Null Hypothesis $H_0:$ The model with Metro and without Longitude is suffcient, $H_A:$ Longitude is a significant addition to the model. 
+
+```{r}
+submodel<-lm(Price~TDate+Age+Stores+Latitude+Metro)
+fullmodel<-lm(Price~TDate+Age+Stores+Latitude+Metro+Longitude)
+anova(submodel, fullmodel)
+```
+The value of the test statistic is 0.0654, the null distribution of the test statistic is $F_{1,407}$. The P-Value is $0.7983$, which is greater than $\alpha=0.05$. Therefore the null hypothesis is not rejected and it is determined that Longitude is not a significant addition to the model after accounting for the predictors, including Metro.
+
+# Fitting a Second Model
+
+```{r}
+fit2<-lm(Price~TDate+Age+Metro+Latitude)
+summary(fit2)
+step(object=lm(Price~TDate+Age+Latitude), scope=(~TDate+Age+Latitude+Metro+Stores), direction="forward")
+```
+
+The new linear model for the Price Per Unit Area of a house based on Transaction Date, House Age, Distance to the Nearest MRT Station, and Latitude is:
+
+Price=-17673.010+5.570(Transaction Date)-0.253(House Age)-0.0058(Distance to Nearest MRT Station)+260.673(Latitude)
+
+The new model is preferable as it has an AIC of 1844.7 and RSS of 34808, as opposed to the first model which has an AIC of 1882.4 and RSS of 38119. 
+
+\pagebreak
+
+## Transforming the Predictors
+
+Logarithmic transformations are easily interpretable and are preferred over other transformations when they are appropriate to the model. Using a scatterplot matrix, one can see relationships between predictors and the response that may indicate the benefit of a logarithmic transformation of the preedictor.
+```{r}
+scatterplotMatrix(~Price+TDate+Age+Metro+Latitude)
+```
+Based on the scatterplot matrix, Metro clearly has an exponential relationship with Price, so applying the natural logarithm to Metro is an appropriate consideration. 
+```{r}
+newMetro=log(Metro)
+transform<-lm(Price~TDate+Age+newMetro+Latitude)
+c(summary(fit2)$r.squared, summary(transform)$r.squared)
+c(AIC(fit2), AIC(transform))
+```
+The new model with the logarithm transformed predictor Metro has a larger R-Squared value, namely 0.6493 as opposed to the R-Squared value of 0.5448, as well as a lesser AIC, indicating that the transformation did improve the model fit. Therefore this transformation is appropriate to the model and will be used in the later transformation of the response.
+
+Another logarithmic transformation to consider based on the scatterplot matrix is the transformation of the House Age predictor. Since the Age variable contains observations with values equal to 0, the variable must be modified before the logarithm can be applied:
+```{r}
+newAge=log(Age+0.0001)
+newTransform<-lm(Price~TDate+newAge+newMetro+Latitude)
+c(summary(transform)$r.squared, summary(newTransform)$r.squared)
+c(AIC(transform), AIC(newTransform))
+```
+While the R-Squared value increased from 0.649 to 0.651 and the AIC decreased from 2913.655 to 2911.408 with the application of the logarithm to Age, the marginal difference may not be considered signifcantly consequential to warrant the increased complexity and barrier of interpretation of the transformation. Therefore, this transformation is not neccesarily appropriate for the model, and will not be included in the following transformation of the reponse.
+
+## Transforming the Response
+
+```{r}
+boxCox(transform)
+```
+While $\lambda=0$ is not contained within the 95% confidence interval of the Box and Cox transformation, it is close enough to the interval to warrant consideration as a possible transformation. The following will compare the transformation using the maximum likelihood estimation of $\lambda$ to the logarithmic transformation of the response Price:
+```{r}
+powerTransform(transform)
+```
+The maximum likelihood estimator for $\lambda$ is 0.3013868.
+```{r}
+newPrice=(Price)^(0.3013868)
+exptransform<-lm(newPrice~TDate+Age+newMetro+Latitude)
+logtransform<-lm(log(Price)~TDate+Age+newMetro+Latitude)
+
+c(summary(exptransform)$r.squared, summary(logtransform)$r.squared)
+
+c(AIC(exptransform), AIC(logtransform))
+```
+The exponentially transformed response model has an AIC of -230.0261, as compareed to the AIC of the logarithmically transformed response model with an AIC of -108.3801. However, the R-Squared value of the exponentially transformed model is 0.710 as opposed to the R-Squared value of 0.715 for the logarithmically transformed model. Due to the ease of interpretation of the logarithmic transformation and the slight difference in model fit, it would then be preferable to use the following model:
+```{r}
+logtransform$coefficients
+```
+
+log(Price)=-620.259+0.174(Transaction Date)-0.00585(House Age)-0.211(log(Metro))+10.988(Latitude).
+
+## Box-Tidwell Transformations
+Another set of predictor transformations to consider is the set of Box-Tidwell power transformations. While they may not present the same ease of interpretation as logarithmic transformations, they may provide a better model fit.
+
+This transformation will use the logarithmic transformation of the response Price, but the non-transformed values of Metro, the following Box-Cox plot shows that the logarithm is still an appropriate transformation for Price given that Metro is not transformed.
+```{r}
+boxCox(fit2)
+```
+
+The Box-Tidwell transformations require that all predictors be strictly positive. As previously mentioned, the variable Age contains values equal to 0, so it will have to be modified once again. The variable Latitude will neccesarily be modified so that the estimates of $\lambda$ are calculable by the boxTidwell function. 
+
+```{r warning=FALSE}
+modifiedAge=Age+0.001
+modifiedLatitude=Latitude/25
+BT<-boxTidwell(formula=log(Price)~ TDate + modifiedAge + Metro + modifiedLatitude)
+
+nTDate=TDate^(BT$result[1])
+nAge=modifiedAge^(BT$result[2])
+nMetro=Metro^(BT$result[3])
+nLatitude=modifiedLatitude^(BT$result[4])
+c(BT$result[1], BT$result[2], BT$result[3], BT$result[4])
+
+BTfit<-lm(log(Price)~nTDate + nMetro + nAge +nLatitude)
+BTfit$coefficients
+
+nAIC<-AIC(BTfit)
+nRSQ<-summary(BTfit)$r.squared
+
+c(nAIC, nRSQ)
+
+```
+Therefore, the model found using the Box-Tidwell maximum likelihood estimators is:
+
+log(Price)=$-78.008+2.857*10^{-13}$(TDate)$^{4.376}-0.176$(Metro)$^{0.375}-0.0086$(Age+0.001)$^{0.246}+1.171$(Latitude/25)$^{286.834}$.
+
+This model has an AIC of -130.067, and an R-Squared value of 0.730. Due to the complexity of the model, it is not practical as compared to the model found through the Box-Cox transformation. 
+
+## Real Estate Valuation Conclusions
+
+The intial linear models both exhbited the expected linear relationships between the individual predictors and the response, even after accounting for the other predictors in the model.
+
+Interestingly, the Transaction Date predictor had a P-Value of 0.0327 in the first linear model and a P-Value of 0.000642 in the second linear model. This could indicate that Transaction Date had a notable correlation with the Number of Convenience Stores such that when that predictor was removed, Transaction Date became more signifcant in the model. 
+
+This relationship could possibly be explained by two theories: There was rapid urban development in the Xindian District in the period when the data was collected. This would explain why as time passes, the number of nearby convenience stores increases. However the data was collected over a period of 11 months. Rapid urban growth to a notable extent over a period of 11 months is unlikely. 
+
+A more likely theory is that near the end of the 11 month period of data collection, one or several residential property developments were completed and listed for sale in relatively urban areas of the Xindian District, which would increase the number of convenience stores in close proximity to properties that were sold later in the 11 month period. 
+
+******
